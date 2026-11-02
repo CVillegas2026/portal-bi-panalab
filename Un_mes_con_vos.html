@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Un mes con vos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one column, max 880px; a sticky round bar on top; each round is a card stack; result as a ledger. */
+:root{
+  --bg:#f6f5ef; --paper:#ffffff; --ink:#141a2e; --mute:#64697d; --line:#dcdde5;
+  --navy:#0e1f4d; --navy-ink:#ffffff; --yellow:#f5c542; --yellow-ink:#0e1f4d;
+  --zxz:#e8762c; --geo:#b8860b; --ficha:#6a3fd1; --roi:#1f8a4c; --bonos:#c0392b; --portal:#1f5fd1;
+  --ok:#1f8a4c; --bad:#c0392b; --hl:#fff6cf; --soft:#eceef5;
+  --display:"Inter",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1322; --paper:#171c2f; --ink:#eef0f7; --mute:#a6abbf; --line:#2d3450;
+  --navy:#1b2d66; --navy-ink:#ffffff; --yellow:#f5c542; --yellow-ink:#0e1f4d;
+  --hl:#3a3415; --soft:#222841; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f1322; --paper:#171c2f; --ink:#eef0f7; --mute:#a6abbf; --line:#2d3450;
+  --navy:#1b2d66; --navy-ink:#ffffff; --yellow:#f5c542; --yellow-ink:#0e1f4d;
+  --hl:#3a3415; --soft:#222841; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+.wrap{max-width:880px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.02em;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,40px);font-weight:800;line-height:1.05}
+h2{font-size:clamp(21px,3.4vw,27px);font-weight:800;line-height:1.15}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;color:var(--zxz)}
+.mute{color:var(--mute)}
+.small{font-size:13px}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--navy);color:var(--navy-ink);margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-right,0px)));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar .in{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 0;flex-wrap:wrap}
+.bar .brand{font-weight:800;letter-spacing:-.01em}
+.bar .brand span{color:var(--yellow)}
+.bar .team{margin-left:auto;font-size:13px;color:#c9d2ef;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%}
+.clock{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--yellow);background:#223569;border-radius:8px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.clock.late{background:var(--bad);color:#fff}
+.clock.done{background:#1f8a4c;color:#fff}
+.frozen{margin-bottom:14px}
+.resetwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rbtn{background:transparent;border:1px solid #3f528f;color:#c9d2ef;border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.rbtn:hover{color:#fff;border-color:#8fa3dc}
+.rbtn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.rconfirm{font-size:12.5px;color:#fff;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.steps{display:flex;gap:6px;width:100%;overflow-x:auto;padding-bottom:4px}
+.steps button{flex:0 0 auto;background:transparent;border:1px solid #3f528f;color:#c9d2ef;border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.steps button.on{background:var(--yellow);color:var(--yellow-ink);border-color:var(--yellow)}
+.steps button.done{border-color:#8fa3dc;color:#fff}
+.steps button:disabled{opacity:.45;cursor:default}
+
+/* sections */
+.view{display:none;padding-top:22px}
+.view.on{display:block}
+.head{display:grid;gap:6px;margin-bottom:16px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#fff;padding:3px 8px;border-radius:4px;vertical-align:middle}
+.tag.zxz{background:var(--zxz)}.tag.geo{background:var(--geo)}.tag.ficha{background:var(--ficha)}.tag.roi{background:var(--roi)}.tag.bonos{background:var(--bonos)}.tag.portal{background:var(--portal)}
+.bubble{border-radius:10px;padding:10px 14px;margin:0 0 14px;background:var(--navy);color:var(--navy-ink)}
+.bubble .who{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--yellow);margin-bottom:2px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;min-width:0}
+.screen{background:var(--paper);border:2px solid var(--ink);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.screen .sb{background:var(--navy);color:#fff;padding:8px 14px;font-size:13px;font-weight:700;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.screen .sb .tabs{font-weight:500;color:#b8c4e6;display:flex;gap:12px;flex-wrap:wrap}
+.screen .sb .tabs b{color:#fff;border-bottom:2px solid var(--yellow)}
+.screen .sb.geo{background:#2a2a2a}.screen .sb.ficha{background:#2a5bd7}.screen .sb.roi{background:#1f6b43}
+.screen .body{padding:12px 14px}
+.stitle{font-weight:700;font-size:14px;margin:4px 0 8px}
+.tw{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);font-weight:700}
+th:first-child,td:first-child,.l{text-align:left}
+tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+tr.hl td{background:var(--hl)}
+.neg{color:var(--bad);font-weight:700}.pos{color:var(--ok);font-weight:700}.est{color:#3b6fd1}
+
+/* questions */
+.q{border:1.5px solid var(--navy);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:var(--paper)}
+.q .qt{font-weight:800;font-size:15px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.q .pts{flex:0 0 auto;font-family:var(--mono);font-size:11px;color:var(--navy-ink);background:var(--navy);border-radius:4px;padding:2px 7px}
+.q .hint{color:var(--mute);font-size:13px;margin:4px 0 10px}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.opt{display:flex;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--paper);min-width:0}
+.opt:has(input:checked){border-color:var(--navy);background:var(--hl)}
+.opt input{accent-color:var(--navy);width:18px;height:18px;margin:0;flex:0 0 auto}
+.opt span{min-width:0}
+.opt:focus-within{outline:2px solid var(--yellow);outline-offset:2px}
+select,input[type=text]{font:inherit;font-size:15px;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%;min-width:0}
+select:focus,input:focus{outline:2px solid var(--yellow);outline-offset:1px;border-color:var(--navy)}
+label.f{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--mute);min-width:0}
+.grid2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid3{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.btn{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;background:var(--navy);color:var(--navy-ink)}
+.btn.y{background:var(--yellow);color:var(--yellow-ink)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.nav{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:6px}
+.warn{color:var(--bad);font-size:13px;font-weight:600;min-height:18px}
+.callout{background:var(--hl);border-left:4px solid var(--yellow);padding:10px 14px;border-radius:0 10px 10px 0;margin-bottom:14px;font-size:14px}
+.callout.navy{background:var(--soft);border-color:var(--navy)}
+
+/* fichas */
+.ficha{border:1.5px solid #2a5bd7;border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--paper)}
+.ficha .fh{background:#2a5bd7;color:#fff;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ficha .fh .nm{font-weight:800;font-size:17px}
+.ficha .fh .meta{font-size:12.5px;color:#d7e2ff}
+.ficha .cat{background:#fff;color:#2a5bd7;font-weight:800;border-radius:4px;padding:2px 9px;font-size:13px;white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border-bottom:1px solid var(--line)}
+.kpis div{padding:8px 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.kpis label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.kpis b{font-size:19px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] .kpis b{color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kpis b{color:#fff}}
+.kpis small{display:block;font-size:11.5px;color:var(--mute)}
+.fcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0}
+.fcols>div{padding:8px 12px;min-width:0}
+.fcols h5{margin:0 0 4px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.fcols table{font-size:12.5px}
+.fcols th,.fcols td{padding:3px 6px}
+.ficha .note{padding:8px 14px;font-size:13px;background:var(--soft);border-top:1px solid var(--line)}
+.ficha .note b{color:var(--navy)}
+:root[data-theme="dark"] .ficha .note b{color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ficha .note b{color:#fff}}
+
+/* allocation */
+.alloc{display:grid;gap:8px}
+.alloc .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px}
+.alloc .nm{font-weight:700}
+.alloc .ctl{display:flex;align-items:center;gap:6px}
+.alloc .ctl button{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-size:18px;font-weight:700;cursor:pointer}
+.alloc .ctl button:disabled{opacity:.35;cursor:not-allowed}
+.alloc .ctl output{font-family:var(--mono);font-weight:700;min-width:78px;text-align:center;font-size:15px}
+.total{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:10px 12px;border-radius:10px;background:var(--soft);margin-top:8px}
+.total .ok{color:var(--ok)}.total .bad{color:var(--bad)}
+
+/* result */
+.hero{background:var(--navy);color:var(--navy-ink);border-radius:14px;padding:22px 20px;margin-bottom:14px}
+.hero .big{font-family:var(--mono);font-size:clamp(30px,7vw,52px);font-weight:700;color:var(--yellow);line-height:1;margin:6px 0 4px}
+.ledger td:first-child{white-space:normal}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;background:var(--soft)}
+.pill.ok{background:#dff3e6;color:#155c33}.pill.bad{background:#fbe3e0;color:#7a1f14}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;max-width:90vw}
+.toast.on{opacity:1}
+.rank{counter-reset:r}
+.rank .r{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.rank .r:first-child{background:var(--hl);border-radius:10px}
+.rank .pos{font-family:var(--mono);font-weight:700;font-size:20px;color:var(--mute)}
+.rank .v{font-family:var(--mono);font-weight:700;font-size:17px;white-space:nowrap}
+.rank .d{font-size:12.5px;color:var(--mute);white-space:normal}
+.rank .del{background:transparent;border:0;color:var(--mute);cursor:pointer;font-size:13px;text-decoration:underline;padding:0}
+details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px;background:var(--paper)}
+summary{cursor:pointer;font-weight:700}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="bar"><div class="in">
+  <div class="brand">Un mes con <span>vos</span></div>
+  <div class="team" id="barTeam"></div>
+  <div class="clock" id="timer" hidden>⏱ 45:00</div>
+  <div class="resetwrap" id="resetWrap"><button type="button" class="rbtn" id="resetTop" title="Borra todo y vuelve al inicio">↺ Reiniciar</button><span class="rconfirm" id="resetConfirm" hidden>¿Borrar todo lo cargado? <button type="button" class="rbtn danger" id="resetYes">Sí, reiniciar</button><button type="button" class="rbtn" id="resetNo">Cancelar</button></span></div>
+  <div class="steps" id="steps"></div>
+</div></div>
+
+<div class="wrap">
+
+<!-- INICIO -->
+<section class="view on" id="v-inicio">
+  <div class="head">
+    <div class="kicker">Del dato a la visita · juego de caso</div>
+    <h1>Cinco médicos. Un producto que cayó. $ 100.000 para invertir.</h1>
+    <p class="mute">Sos el APM de Litoral Norte. Cerró septiembre y hoy planificás octubre. Lucas lo hizo en el video con la Dra. González; ahora les toca a ustedes, con el mismo camino: primero el número, después la causa, después el médico y recién al final la plata.</p>
+  </div>
+  <div class="card">
+    <div class="grid2">
+      <label class="f">Nombre del equipo<input type="text" id="teamName" placeholder="Ej.: Los de Barrio Norte" maxlength="40" autocomplete="off"></label>
+      <label class="f">Integrantes (opcional)<input type="text" id="teamMembers" placeholder="Nombres" maxlength="120" autocomplete="off"></label>
+    </div>
+    <div class="warn" id="w0"></div>
+    <div class="nav"><span></span><button class="btn y" id="startBtn">Empezar la Ronda 1 →</button></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Cómo se juega</h3><p class="small mute" style="margin-top:6px">Cuatro rondas, una por herramienta: <b>Zona por Zona → GeoDATA → Ficha de Médicos → Reporte ROI</b>. En cada una leen una pantalla y toman una decisión. Al final la página calcula sola la valorización del equipo.</p></div>
+    <div class="card"><h3>Cómo se calcula</h3><p class="small mute" style="margin-top:6px"><b>Valorización = venta recuperada − $ 100.000 de inversión + bono de preparación.</b></p>
+      <ul class="small mute" style="margin:6px 0 0;padding-left:18px;display:grid;gap:4px">
+        <li><b>Bono de preparación:</b> cada respuesta correcta de las rondas 1 a 4 suma puntos (35 como máximo) y cada punto vale $ 50.000.</li>
+        <li><b>Venta recuperada:</b> cada tramo de $ 10.000 que asignan a un médico genera venta en 30 días. Cuánto, depende de dos cosas: el <b>potencial</b> de ese médico para mover receta de Folcres y si lo <b>visitaron con el mensaje adecuado</b> en la Ronda 3. Un médico bien visitado rinde mucho más que uno al que solo le llegó la inversión.</li>
+        <li><b>Rendimiento decreciente:</b> los primeros tramos en un médico rinden más que los siguientes. Concentrar toda la inversión en uno solo no es lo mismo que invertir donde rinde.</li>
+        <li><b>Tiempo:</b> 45 minutos desde que entran a la Ronda 1. El cronómetro corre arriba; si llega a cero, el mes cierra con lo que tengan cargado. Cada ronda confirmada queda cerrada: pueden volver a mirar los datos, no cambiar las respuestas.</li>
+      </ul></div>
+  </div>
+  <p class="small mute">Datos ilustrativos. Médicos y competidores ficticios.</p>
+</section>
+
+<!-- RONDA 1 -->
+<section class="view" id="v-r1">
+  <div class="head"><div class="kicker">1° de octubre, a primera hora · <span class="tag zxz">Zona por Zona</span></div><h2>Ronda 1 · ¿Llegué al objetivo de septiembre?</h2></div>
+  <div class="callout navy frozen" hidden><b>Ronda confirmada.</b> Podés volver a mirar los datos, pero las respuestas ya quedaron cerradas.</div>
+  <div class="bubble"><span class="who">Gerente de producto</span>¿Cómo cerraste septiembre? ¿Y en pesos?</div>
+  <div class="screen"><div class="sb">📊 BI Zona x Zona <span class="tabs"><span>Resumen</span><span>Por Vendedor</span><b>Por Familia</b><span>Por SKU</span></span></div>
+    <div class="body"><div class="stitle">Unidades netas y valores brutos por familia · Litoral Norte · Dermatología · sep-26</div>
+    <div class="tw"><table id="t-zxz"></table></div>
+    <p class="small mute" style="margin-top:8px">Valores en miles de pesos. Estimado = objetivo mensual del territorio.</p></div></div>
+
+  <div class="q"><div class="qt"><span>1.1 · ¿Qué familia explica la mayor parte de los pesos que te faltaron?</span><span class="pts">6 pts</span></div>
+    <p class="hint">No es necesariamente la del porcentaje más bajo. Pensalo en plata.</p>
+    <div class="opts" id="q11"></div></div>
+  <div class="q"><div class="qt"><span>1.2 · A toda la línea Dermatología le faltaron $ 1.025.000 para llegar al objetivo. ¿Cuánto de eso se explica por la familia que elegiste?</span><span class="pts">4 pts</span></div>
+    <p class="hint">Mirá la columna "Diferencia $" de esa familia y compará con el total de la línea (−1.025).</p>
+    <div class="grid2">
+      <label class="f">Pesos que le faltaron a esa familia<select id="q12a"><option value="">Elegí…</option><option>$ 85.000</option><option>$ 130.000</option><option>$ 170.000</option><option>$ 620.000</option><option>$ 1.025.000</option></select></label>
+      <label class="f">Eso, ¿qué porcentaje es de los $ 1.025.000?<select id="q12b"><option value="">Elegí…</option><option>13 %</option><option>17 %</option><option>40 %</option><option>60 %</option><option>85 %</option></select></label>
+    </div></div>
+  <div class="bubble"><span class="who">Gerente de producto</span>No lo dejes pasar: buscá la causa en el GeoDATA.</div>
+  <div class="warn" id="w1"></div>
+  <div class="nav"><button class="btn ghost" data-go="inicio">← Volver</button><button class="btn y" data-next="r1">Confirmar y pasar a la Ronda 2 →</button></div>
+</section>
+
+<!-- RONDA 2 -->
+<section class="view" id="v-r2">
+  <div class="head"><div class="kicker">Ese mismo día · llega el GeoDATA de septiembre · <span class="tag geo">GeoDATA</span></div><h2>Ronda 2 · ¿Por qué cae Folcres?</h2></div>
+  <div class="callout navy frozen" hidden><b>Ronda confirmada.</b> Podés volver a mirar los datos, pero las respuestas ya quedaron cerradas.</div>
+  <div class="bubble"><span class="who">Gerente de producto</span>Folcres está en 70 % del objetivo. ¿Lo viste? ¿Dónde nos duele más… y es venta o es receta?</div>
+  <div class="screen"><div class="sb geo">GeoDATA · VOS · LITORAL NORTE · FOLCRES (mercado capilar) · SEPTIEMBRE 2026</div>
+    <div class="body">
+      <div class="stitle">1. Análisis competitivo · market share en prescripciones (MAT)</div><div class="tw"><table id="t-geo1"></table></div>
+      <div class="stitle" style="margin-top:14px">2. Principales códigos postales · share de Folcres y de Finaxil (MAT)</div><div class="tw"><table id="t-geo2"></table></div>
+      <div class="stitle" style="margin-top:14px">3. Barrio Norte (3105) · ¿venta o receta?</div><div class="tw"><table id="t-geo3"></table></div>
+      <p class="small mute" style="margin-top:8px">REP = recetas por médico/mes. Competidores ficticios.</p>
+    </div></div>
+
+  <div class="screen"><div class="sb geo">GeoDATA · pág. 10/74 · 4. Market share prescriptores · mercado capilar · CP 3105 Barrio Norte + 3110 Costanera (MAT)</div>
+    <div class="body"><div class="tw"><table id="t-geo4"></table></div>
+    <p class="small mute" style="margin-top:8px">✔ en tu panel de visita · R fuera de panel. % Mercado = participación del médico en las recetas del mercado capilar de la zona. Share = % de las recetas capilares de ese médico que van a cada marca.</p></div></div>
+  <div class="callout navy"><b>Guarden esta tabla en la cabeza:</b> ¿quién les llama la atención y por qué? En la Ronda 3 van a tener la ficha completa de cinco de estos médicos.</div>
+  <div class="q"><div class="qt"><span>2.1 · ¿En qué código postal se concentra la caída?</span><span class="pts">3 pts</span></div><div class="opts" id="q21"></div></div>
+  <div class="q"><div class="qt"><span>2.2 · ¿Es un problema de venta o de receta?</span><span class="pts">4 pts</span></div>
+    <div class="opts" id="q22"></div>
+    <p class="hint" style="margin-top:12px">Marcá los datos que justifican tu respuesta (podés marcar varios):</p>
+    <div class="opts" id="q22j"></div></div>
+  <div class="q"><div class="qt"><span>2.3 · ¿Qué marca te está ganando esa receta?</span><span class="pts">3 pts</span></div><div class="opts" id="q23"></div></div>
+
+  <div class="warn" id="w2"></div>
+  <div class="nav"><button class="btn ghost" data-go="r1">← Ronda 1</button><button class="btn y" data-next="r2">Confirmar y pasar a la Ronda 3 →</button></div>
+</section>
+
+<!-- RONDA 3 -->
+<section class="view" id="v-r3">
+  <div class="head"><div class="kicker">Ese mismo día · Portal BI → <span class="tag ficha">Ficha de Médicos</span></div><h2>Ronda 3 · ¿A quién visitás primero y de qué le hablás?</h2></div>
+  <div class="callout navy frozen" hidden><b>Ronda confirmada.</b> Podés volver a mirar los datos, pero las respuestas ya quedaron cerradas.</div>
+  <div class="bubble"><span class="who">Gerente de producto</span>Antes de visitarlos, entendé por qué. Acá tenés las cinco fichas. Tenés una semana: tres visitas con tiempo real para hablar de Folcres.</div>
+  <div id="fichas"></div>
+
+  <div class="q"><div class="qt"><span>3.1 · Prioridad de visita para la primera semana de octubre</span><span class="pts">8 pts</span></div>
+    <p class="hint">Los dos restantes quedan para más adelante (o no se visitan por Folcres este mes).</p>
+    <div class="grid3">
+      <label class="f">1ª visita<select id="p1"></select></label>
+      <label class="f">2ª visita<select id="p2"></select></label>
+      <label class="f">3ª visita<select id="p3"></select></label>
+    </div></div>
+  <div class="q"><div class="qt"><span>3.2 · ¿De qué le hablás a cada uno? Elegí un mensaje por médico</span><span class="pts">5 pts</span></div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="card" style="margin:0"><b>A · Recuperar.</b> "Hace un año recetabas 11 Folcres; hoy, 2. ¿Qué cambió?" Evidencia Folcres vs. Finaxil, escuchar la objeción y proponerle un plan con inversión para que vuelva a probarla.</div>
+      <div class="card" style="margin:0"><b>B · Mantener.</b> Agradecer, no tocar lo que funciona, sostener la inversión actual y usar el tiempo para una novedad de otra familia.</div>
+      <div class="card" style="margin:0"><b>C · Conquistar.</b> Primera visita: presentarse, presentar la línea capilar de Panalab desde cero, dejar evidencia y abrir una primera inversión para que la pruebe.</div>
+      <div class="card" style="margin:0"><b>D · Reorientar.</b> Visita corta o posponer: retirar la inversión que no rinde y, si corresponde, reasignarla a un médico o producto donde sí mueva receta.</div>
+    </div>
+    <div class="grid3" id="msgs"></div></div>
+  <div class="callout"><b>Pista de Lucas:</b> "La Dra. González, la segunda que más receta del mercado… cero Valcatil." El médico que más duele no siempre es el que peor ROI tiene. A veces es el que mejor ROI tiene en otros productos.</div>
+  <div class="warn" id="w3"></div>
+  <div class="nav"><button class="btn ghost" data-go="r2">← Ronda 2</button><button class="btn y" data-next="r3">Confirmar y pasar a la Ronda 4 →</button></div>
+</section>
+
+<!-- RONDA 4 -->
+<section class="view" id="v-r4">
+  <div class="head"><div class="kicker">Ese mismo día · <span class="tag roi">Reporte ROI</span></div><h2>Ronda 4 · ¿Dónde rinde más cada peso?</h2></div>
+  <div class="callout navy frozen" hidden><b>Ronda confirmada.</b> Podés volver a mirar los datos, pero las respuestas ya quedaron cerradas.</div>
+  <div class="bubble"><span class="who">Gerente de producto</span>Vamos de lo grande a lo chico. La compañía: $ 25 por cada $ 1 invertido. ¿Y vos? ¿Y tus médicos?</div>
+  <div class="screen"><div class="sb roi">Reporte ROI <span class="tabs"><span>Resumen ROI</span><b>ROI por APM</b><span>Compañía</span><span>Representantes</span><span>Productos</span></span></div>
+    <div class="body">
+      <div class="grid3" style="margin-bottom:12px">
+        <div class="card" style="margin:0;padding:12px"><div class="small mute">COMPAÑÍA</div><div class="mono" style="font-size:26px;font-weight:700">$ 25 <span class="small mute">por $ 1</span></div></div>
+        <div class="card" style="margin:0;padding:12px"><div class="small mute">ZONA LITORAL NORTE</div><div class="mono" style="font-size:26px;font-weight:700">$ 29 <span class="small mute">por $ 1</span></div></div>
+        <div class="card" style="margin:0;padding:12px;border-color:var(--roi)"><div class="small mute">TU CARTERA</div><div class="mono" style="font-size:26px;font-weight:700">$ 27 <span class="small mute">por $ 1</span></div></div>
+      </div>
+      <div class="stitle">ROI por médico · tu cartera · MAT sep-25 a sep-26</div><div class="tw"><table id="t-roi"></table></div>
+      <p class="small mute" style="margin-top:8px">Inversión = incentivo asignado al médico en el período. Uni. bonos = bonos usados por sus pacientes. El retorno es un indicador analítico.</p>
+    </div></div>
+
+  <div class="q"><div class="qt"><span>4.1 · Tenés $ 100.000 de inversión para octubre. Repartila en tramos de $ 10.000.</span><span class="pts">Valorización</span></div>
+    <p class="hint">Podés dejar médicos en cero. Invertís según potencial: donde hay receta que recuperar o que abrir. En 30 días se mide en el BI de Bonos.</p>
+    <div class="alloc" id="alloc"></div>
+    <div class="total"><span>Total asignado</span><span id="allocTotal"></span></div></div>
+  <div class="q"><div class="qt"><span>4.2 · ¿A alguien le retirarías la inversión que hoy tiene?</span><span class="pts">+2 pts</span></div>
+    <div class="grid2">
+      <label class="f">¿A quién?<select id="q42a"><option value="">Elegí…</option><option value="nadie">A nadie</option><option value="ocampo">Dra. Ocampo</option><option value="sosa">Dr. Sosa</option><option value="vidal">Dra. Vidal</option><option value="paredes">Dra. Paredes</option></select></label>
+      <label class="f">¿Adónde la movés?<select id="q42b"><option value="">Elegí…</option><option value="ocampo">A la Dra. Ocampo</option><option value="rios">Al Dr. Ríos</option><option value="sosa">Al Dr. Sosa</option><option value="vidal">A la Dra. Vidal</option><option value="otro">A otro producto que ese médico sí recete</option><option value="na">No corresponde</option></select></label>
+    </div></div>
+  <div class="bubble"><span class="who">Gerente de producto</span>Ahí está la decisión. En 30 días lo vemos en el BI de Bonos.</div>
+  <div class="warn" id="w4"></div>
+  <div class="nav"><button class="btn ghost" data-go="r3">← Ronda 3</button><button class="btn y" id="finishBtn">Cerrar el mes y ver la valorización →</button></div>
+</section>
+
+<!-- RESULTADO -->
+<section class="view" id="v-fin">
+  <div class="head"><div class="kicker" style="color:var(--roi)">30 días después · <span class="tag bonos">BI de Bonos</span></div><h2 id="finTitle">Valorización del equipo</h2></div>
+  <div class="hero"><div class="small" style="color:#c9d2ef">VALORIZACIÓN FINAL</div><div class="big num" id="finTotal">$ 0</div><div class="small" id="finSub" style="color:#c9d2ef"></div></div>
+  <div class="card"><h3>Cómo se compone</h3><div class="tw"><table class="ledger" id="t-fin"></table></div></div>
+  <div class="card"><h3>Cómo se calculó</h3><div class="tw"><table id="t-finHow"></table></div><p class="small mute" style="margin-top:8px">Cada tramo de $ 10.000 rinde según el potencial del médico (cuánta receta de Folcres se puede recuperar o abrir) y según si lo visitaron con el mensaje adecuado en la Ronda 3. Los primeros tramos rinden más que los siguientes.</p></div>
+  <div class="card"><h3>Dónde rindió la inversión</h3><div class="tw"><table id="t-finInv"></table></div><p class="small mute" style="margin-top:8px">El rendimiento de cada tramo depende de a qué médico fue y de cómo se preparó la visita en la Ronda 3.</p></div>
+  <div class="card" style="border-color:var(--roi)"><h3>Cómo hubiera sido la inversión ideal</h3>
+    <p class="small mute" style="margin:6px 0 10px">La mejor contribución sale de poner la plata donde hay receta de Folcres que <b>recuperar</b> o que <b>abrir</b>, visitando primero a esos médicos con el mensaje justo, y de no insistir donde la inversión ya no mueve nada.</p>
+    <div class="tw"><table id="t-ideal"></table></div>
+    <div class="callout navy" style="margin:12px 0 0" id="idealGap"></div></div>
+  <div class="card" id="sendCard"><h3>Ranking</h3><p class="small mute" style="margin:6px 0 10px" id="sendMsg">Mostrale esta pantalla al facilitador para que anote el resultado.</p>
+    <div class="nav"><button class="btn" id="sendBtn" hidden>Enviar al ranking</button><button class="btn ghost" id="copyBtn">Copiar resumen</button></div></div>
+  <div class="nav"><button class="btn ghost" data-go="r4">← Revisar la Ronda 4</button><button class="btn ghost" id="resetBtn">Empezar de nuevo</button></div>
+</section>
+
+<!-- RANKING (facilitador) -->
+<section class="view" id="v-ranking">
+  <div class="head"><div class="kicker">Facilitador</div><h2>Ranking de equipos</h2><p class="mute small" id="rankMsg">Esperando resultados…</p></div>
+  <div class="card"><div class="rank" id="rankList"></div></div>
+  <div class="card" id="manualCard"><h3>Agregar un resultado a mano</h3><p class="small mute" style="margin:4px 0 10px">Para equipos que no pudieron enviar desde su dispositivo.</p>
+    <div class="grid3">
+      <label class="f">Equipo<input type="text" id="mName" maxlength="40"></label>
+      <label class="f">Valorización ($)<input type="text" id="mVal" inputmode="numeric" placeholder="4.010.000"></label>
+      <label class="f">Puntos (opcional)<input type="text" id="mPts" inputmode="numeric" placeholder="35"></label>
+    </div>
+    <div class="nav" style="margin-top:10px"><span class="warn" id="wm"></span><button class="btn" id="mAdd">Agregar</button></div></div>
+  <details><summary>Respuestas y lógica de cada ronda (no mostrar a los equipos)</summary>
+    <div class="small" style="margin-top:10px;display:grid;gap:10px">
+      <p><b>R1.</b> Folcres (−$ 620.000, 60 % del faltante de $ 1.025.000). Tridermal tiene el peor % (53 %) pero son solo $ 85.000. Parciales: Panaderm 2, Tridermal 1, Valcatil 1.</p>
+      <p><b>R2.</b> CP 3105 Barrio Norte (52,3 → 38,9). Es receta: las recetas caen 31 % mientras las ventas en farmacias se mantienen estables (310 → 304), la cobertura no cambió (94 → 94 %) y el precio relativo tampoco (1,05). Justificaciones válidas: recetas −31 % y ventas en farmacia estables. Las tres opciones falsas contradicen los datos: menos farmacias con stock, Finaxil más barato, unidades cayendo igual que las recetas. Finaxil se llevó punto por punto lo que perdió Folcres (18,1 → 33,2 en el CP).</p>
+      <p><b>R3.</b> Top 3: Ocampo (A, recuperar), Ríos (C, conquistar), Sosa (B, mantener). Vidal y Paredes: D. Ocampo es la Dra. González del caso: 52 bonos usados en el año, ninguno de Folcres; 11 → 2 recetas; se fue a Finaxil. Sosa es la trampa del mejor ROI: ya receta todo. Ríos nunca fue visitado y mueve 10 recetas capilares por mes.</p>
+      <p><b>R4.</b> Rendimiento por tramo de $ 10.000: Ocampo bien preparada (top 3 + A) $ 340.000 × 4, luego $ 100.000; visitada con otro mensaje $ 150.000 × 4, luego $ 80.000; sin visita $ 100.000. Ríos bien preparado (top 3 + C) $ 220.000 × 3, luego $ 100.000; otro mensaje $ 100.000 × 3, luego $ 50.000; sin visita $ 50.000. Sosa $ 120.000 × 2, luego $ 40.000. Vidal $ 80.000. Paredes $ 60.000. Óptimo: Ocampo 50 / Ríos 30 / Sosa 20 = $ 2.360.000 recuperados; valorización máxima $ 4.010.000 (con 35 pts × $ 50.000 = $ 1.750.000 de preparación). 4.2: retirar a Paredes y moverla a Ocampo o Ríos (o a un producto que ella sí recete).</p>
+    </div></details>
+  <div class="nav"><button class="btn ghost" data-go="inicio">← Volver al inicio</button></div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- DATA ---------- */
+const DOCS = [
+ {id:"ocampo", nm:"Dra. Laura OCAMPO", short:"Dra. Ocampo", meta:"Dermatología · MP 20841 · CP 3105 Barrio Norte · Panel: SÍ · Última visita: hace 3 semanas (hablaron de Proavenal)", cat:"CAT 1",
+  k:[["Mix Panalab","28 %","Panalab es su 2° laboratorio (1°: Austral)"],["Folcres · Rx/mes","11 → 2","hace 12 meses → hoy"],["Finaxil · Rx/mes","0 → 8","hace 12 meses → hoy"],["Inversión 12 m","$ 52.000","continuidad: 10 meses"],["Bonos usados 12 m","52","por sus pacientes"],["ROI","$ 34","por cada $ 1 invertido"]],
+  bonos:[["PROAVENAL",30,9],["PANADERM",14,4],["CLINDACIN",8,3],["FOLCRES",0,2,1]], rx:[["FINAXIL",8,"67 %"],["FOLCRES",2,"18 %"],["TRICOVIT",2,"15 %"]],
+  note:"<b>Comentario de la última visita:</b> \"Muy conforme con Proavenal. No se habló de Folcres.\""},
+ {id:"sosa", nm:"Dr. Martín SOSA", short:"Dr. Sosa", meta:"Dermatología · MP 19377 · CP 3105 Barrio Norte · Panel: SÍ · Última visita: hace 2 semanas", cat:"CAT 1",
+  k:[["Mix Panalab","61 %","Panalab es su 1° laboratorio"],["Folcres · Rx/mes","14 → 14","estable, 100 % del mercado capilar"],["Finaxil · Rx/mes","0 → 0","no la receta"],["Inversión 12 m","$ 90.000","continuidad: 12 meses"],["Bonos usados 12 m","90","por sus pacientes"],["ROI","$ 38","por cada $ 1 invertido"]],
+  bonos:[["FOLCRES",40,14,1],["PROAVENAL",25,8],["COMBINATER",15,5],["OTROS",10,6]], rx:[["FOLCRES",14,"100 %"],["FINAXIL",0,"0 %"]],
+  note:"<b>Comentario de la última visita:</b> \"Receta todo lo que puede. Preguntó si la inversión sigue el año que viene.\""},
+ {id:"rios", nm:"Dr. Ezequiel RÍOS", short:"Dr. Ríos", meta:"Dermatología · MP 24510 · CP 3105 Barrio Norte · Panel: NO · Sin visitas registradas en 12 meses", cat:"CAT 2",
+  k:[["Mix Panalab","9 %","solo Clindacin, espontáneo"],["Folcres · Rx/mes","0 → 0","nunca la recetó"],["Finaxil · Rx/mes","5 → 6","+ Tricovit 4"],["Inversión 12 m","$ 0","sin inversión"],["Bonos usados 12 m","3","por sus pacientes (Clindacin)"],["ROI","s/d","sin inversión registrada"]],
+  bonos:[["CLINDACIN",3,2],["FOLCRES",0,0]], rx:[["FINAXIL",6,"60 %"],["TRICOVIT",4,"40 %"],["FOLCRES",0,"0 %"]],
+  note:"<b>Observación:</b> consultorio nuevo en Barrio Norte (abrió hace 14 meses). Alto volumen capilar. Nunca recibió a Panalab."},
+ {id:"vidal", nm:"Dra. Carolina VIDAL", short:"Dra. Vidal", meta:"Clínica Médica · MP 17802 · CP 3105 Barrio Norte · Panel: SÍ · Última visita: hace 2 meses", cat:"CAT 3",
+  k:[["Mix Panalab","15 %","Panalab es su 4° laboratorio"],["Folcres · Rx/mes","1 → 1","ocasional"],["Finaxil · Rx/mes","2 → 3","deriva lo capilar al dermatólogo"],["Inversión 12 m","$ 6.000","continuidad: 3 meses"],["Bonos usados 12 m","6","por sus pacientes"],["ROI","$ 12","por cada $ 1 invertido"]],
+  bonos:[["PROAVENAL",6,2],["FOLCRES",0,1]], rx:[["FINAXIL",3,"75 %"],["FOLCRES",1,"25 %"]],
+  note:"<b>Comentario de la última visita:</b> \"Muy amable, charla larga. Lo capilar lo deriva. Potencial bajo en este mercado.\""},
+ {id:"paredes", nm:"Dra. Silvia PAREDES", short:"Dra. Paredes", meta:"Dermatología · MP 15230 · CP 3110 Costanera · Panel: SÍ · Última visita: hace 1 mes", cat:"CAT 4",
+  k:[["Mix Panalab","35 %","Panalab es su 2° laboratorio"],["Folcres · Rx/mes","2 → 1","bajo volumen"],["Finaxil · Rx/mes","1 → 2",""],["Inversión 12 m","$ 8.000","continuidad: 4 meses"],["Bonos usados 12 m","8","por sus pacientes · todos de Folcres"],["ROI","$ 6","por cada $ 1 invertido"]],
+  bonos:[["FOLCRES",8,1,1]], rx:[["FINAXIL",2,"67 %"],["FOLCRES",1,"33 %"]],
+  note:"<b>Comentario de la última visita:</b> \"Renovamos la inversión un trimestre más. Atiende pocos pacientes capilares; la mayoría son de acné.\""}
+];
+const FAM = ["VALCATIL","PROAVENAL","FOLCRES","COMBINATER","PANADERM","CLINDACIN","TRIDERMAL"];
+const fmt = n => "$ " + Math.round(n).toLocaleString("es-AR");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- STATE ---------- */
+const DEF = () => ({team:"",members:"",step:"inicio",done:{},startedAt:0,finishedAt:0,timedOut:false,q11:"",q12a:"",q12b:"",q21:"",q22:"",q22j:[],q23:"",p1:"",p2:"",p3:"",msg:{},alloc:{ocampo:0,sosa:0,rios:0,vidal:0,paredes:0},q42a:"",q42b:"",sent:false});
+let S = DEF();
+try{ const raw = localStorage.getItem("umcv-state"); if(raw){ S = Object.assign(DEF(), JSON.parse(raw)); } }catch(e){}
+function save(){ try{ localStorage.setItem("umcv-state", JSON.stringify(S)); }catch(e){} }
+window.claude?.hot?.snapshot?.(() => S);
+
+/* ---------- TABLES ---------- */
+function table(id, head, rows, opts){
+  const t = document.getElementById(id); opts = opts||{};
+  let h = "<tr>" + head.map((x,i)=>`<th${i===0||(opts.left||[]).includes(i)?' class="l"':''}>${x}</th>`).join("") + "</tr>";
+  rows.forEach(r => { const cls = r.cls||""; h += `<tr class="${cls}">` + r.c.map((x,i)=>`<td${(opts.left||[]).includes(i)?' class="l"':''}>${x}</td>`).join("") + "</tr>"; });
+  t.innerHTML = h;
+}
+const neg = s => `<span class="neg">${s}</span>`, pos = s => `<span class="pos">${s}</span>`, est = s => `<span class="est">${s}</span>`;
+table("t-zxz", ["Familia","UN Real","UN Est","UN % Cumpl","$ Real (miles)","$ Est (miles)","$ % Cumpl","Diferencia $ (miles)"], [
+ {c:["VALCATIL","1.205",est("1.250"),"96,4 %","3.120",est("3.250"),"96,0 %",neg("−130")]},
+ {c:["PROAVENAL","1.480",est("1.510"),"98,0 %","2.010",est("2.050"),"98,0 %",neg("−40")]},
+ {c:["FOLCRES","512",est("725"),"70,6 %","1.480",est("2.100"),"70,5 %",neg("−620")]},
+ {c:["COMBINATER","690",est("665"),"103,8 %","1.350",est("1.300"),"103,8 %",pos("+50")]},
+ {c:["PANADERM","430",est("505"),"85,1 %","980",est("1.150"),"85,2 %",neg("−170")]},
+ {c:["CLINDACIN","395",est("415"),"95,2 %","610",est("640"),"95,3 %",neg("−30")]},
+ {c:["TRIDERMAL","48",est("90"),"53,3 %","95",est("180"),"52,8 %",neg("−85")]},
+ {cls:"tot",c:["Total Dermatología","4.760",est("5.160"),"92,2 %","9.645",est("10.670"),"90,4 %",neg("−1.025")]}]);
+table("t-geo1", ["Marca","Laboratorio","MAT anterior","MAT actual","Variación"], [
+ {c:["FOLCRES","Panalab","48,2","43,6",neg("−4,6")]},{c:["FINAXIL","Lab. Austral","21,0","26,4",pos("+5,4")]},
+ {c:["TRICOVIT","Lab. Meridional","12,5","12,2","−0,3"]},{c:["CAPILEX","Panalab","9,8","10,1","+0,3"]},{c:["Otros","—","8,5","7,7","−0,8"]}], {left:[1]});
+table("t-geo2", ["CP","% de la zona","Folcres MAT ant","Folcres MAT act","Var","Finaxil MAT ant","Finaxil MAT act"], [
+ {c:["3100 · CENTRO","41 %","49,0","48,1","−0,9","20,2","21,0"]},
+ {c:["3105 · BARRIO NORTE","28 %","52,3","38,9",neg("−13,4"),"18,1",pos("33,2")]},
+ {c:["3110 · COSTANERA","18 %","44,1","43,0","−1,1","24,0","25,1"]},
+ {c:["3116 · PARQUE OESTE","13 %","46,0","44,8","−1,2","22,3","24,0"]}]);
+table("t-geo3", ["Indicador · Folcres en CP 3105","Hace 12 meses","Hoy","Variación"], [
+ {c:["Recetas por mes (REP)","12,1","8,4",neg("−31 %")]},{c:["Unidades vendidas en farmacias del CP (mes)","310","304","estable (−2 %)"]},
+ {c:["Farmacias con stock de Folcres (cobertura)","94 %","94 %","sin cambio"]},{c:["Precio relativo Folcres vs Finaxil","1,05","1,05","sin cambio"]}]);
+table("t-geo4", ["Prescriptor","Esp.","Cat.","CP","% Mercado","Share Folcres ant","Share Folcres act","Share Finaxil act"], [
+ {c:["✔ OCAMPO LAURA","DER","1","3105","7,1 %","85,0","18,0","67,0"]},
+ {c:["✔ SOSA MARTÍN","DER","1","3105","6,4 %","100,0","100,0","0,0"]},
+ {c:["R RÍOS EZEQUIEL","DER","2","3105","4,8 %","0,0","0,0","60,0"]},
+ {c:["✔ FERRARI JULIETA","DER","2","3105","3,9 %","58,0","55,0","30,0"]},
+ {c:["✔ VIDAL CAROLINA","CLM","3","3105","1,9 %","30,0","25,0","75,0"]},
+ {c:["✔ PAREDES SILVIA","DER","4","3110","1,2 %","50,0","33,0","67,0"]},
+ {c:["R MOLINA CECILIA","DER","3","3110","1,1 %","40,0","42,0","35,0"]},
+ {cls:"tot",c:["ACUMULADO","","","","26,4 %","","",""]}], {left:[1]});
+table("t-roi", ["Médico","Inversión ($)","Uni. bonos","Val. bonos ($)","Uni. Rx Panalab","Val. Rx ($)","Ingreso atribuido ($)","ROI ($ por $ 1)"], [
+ {c:["SOSA MARTÍN","90.000","90","2.070.000","396","1.350.000","3.420.000",pos("$ 38")]},
+ {c:["OCAMPO LAURA","52.000","52","1.196.000","216","572.000","1.768.000",pos("$ 34")]},
+ {c:["FERRARI JULIETA","30.000","30","690.000","120","210.000","900.000","$ 30"]},
+ {c:["VIDAL CAROLINA","6.000","6","42.000","36","30.000","72.000","$ 12"]},
+ {c:["PAREDES SILVIA","8.000","8","24.000","12","24.000","48.000",neg("$ 6")]},
+ {c:["RÍOS EZEQUIEL","0","0","0","24","0","0","s/d"]}]);
+
+/* ---------- OPTIONS ---------- */
+function radios(id, name, items){
+  document.getElementById(id).innerHTML = items.map(([v,l]) => `<label class="opt"><input type="radio" name="${name}" value="${esc(v)}" id="${name}-${esc(v).replace(/\W/g,'')}"><span>${l}</span></label>`).join("");
+}
+function checks(id, name, items){
+  document.getElementById(id).innerHTML = items.map(([v,l]) => `<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" id="${name}-${esc(v)}"><span>${l}</span></label>`).join("");
+}
+radios("q11","q11",FAM.map(f=>[f,f]));
+radios("q21","q21",[["3100","3100 · Centro"],["3105","3105 · Barrio Norte"],["3110","3110 · Costanera"],["3116","3116 · Parque Oeste"]]);
+radios("q22","q22",[["venta","Venta (farmacia, stock, precio)"],["receta","Receta (el médico dejó de prescribirla)"]]);
+checks("q22j","q22j",[["rx","Las recetas por mes caen 31 %"],["uni","Las ventas en farmacias se mantienen estables mientras cae la receta"],["stock","Hay menos farmacias con stock de Folcres"],["finprecio","Finaxil bajó el precio"],["unimas","Las unidades vendidas cayeron igual que las recetas"]]);
+radios("q23","q23",[["FINAXIL","Finaxil (Lab. Austral)"],["TRICOVIT","Tricovit"],["CAPILEX","Capilex (Panalab)"],["OTROS","Otros"]]);
+
+/* fichas */
+document.getElementById("fichas").innerHTML = DOCS.map(d => `
+<div class="ficha"><div class="fh"><div><div class="nm">${d.nm}</div><div class="meta">${d.meta}</div></div><span class="cat">${d.cat}</span></div>
+<div class="kpis">${d.k.map(k=>`<div><label>${k[0]}</label><b>${k[1]}</b><small>${k[2]}</small></div>`).join("")}</div>
+<div class="fcols"><div><h5>Bonos usados por sus pacientes · últimos 12 meses</h5><table><tr><th class="l">Producto</th><th>Bonos</th><th>Rx/mes hoy</th></tr>${d.bonos.map(b=>`<tr${b[3]?' class="hl"':''}><td>${b[0]}</td><td>${b[1]}</td><td>${b[2]}</td></tr>`).join("")}</table></div>
+<div><h5>Qué receta en el mercado capilar (MAT)</h5><table><tr><th class="l">Marca</th><th>Rx/mes</th><th>Share</th></tr>${d.rx.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</table></div></div>
+<div class="note">${d.note}</div></div>`).join("");
+
+const docOpts = '<option value="">Elegí…</option>' + DOCS.map(d=>`<option value="${d.id}">${d.short}</option>`).join("");
+["p1","p2","p3"].forEach(id => document.getElementById(id).innerHTML = docOpts);
+document.getElementById("msgs").innerHTML = DOCS.map(d => `<label class="f">${d.short}<select id="m-${d.id}" data-doc="${d.id}"><option value="">Elegí…</option><option value="A">A · Recuperar</option><option value="B">B · Mantener</option><option value="C">C · Conquistar</option><option value="D">D · Reorientar</option></select></label>`).join("");
+document.getElementById("alloc").innerHTML = DOCS.map(d => `<div class="row"><div><div class="nm">${d.short}</div><div class="small mute">${d.cat} · ${d.k[5][1]} por $ 1 hoy</div></div><div class="ctl"><button type="button" data-a="${d.id}" data-d="-1" aria-label="Menos">−</button><output id="a-${d.id}">$ 0</output><button type="button" data-a="${d.id}" data-d="1" aria-label="Más">+</button></div></div>`).join("");
+
+/* ---------- RESTORE UI FROM STATE ---------- */
+function setRadio(name, v){ const el = document.querySelector(`input[name="${name}"][value="${CSS.escape(v)}"]`); if(el) el.checked = true; }
+function restore(){
+  document.getElementById("teamName").value = S.team; document.getElementById("teamMembers").value = S.members;
+  if(S.q11) setRadio("q11",S.q11); document.getElementById("q12a").value = S.q12a; document.getElementById("q12b").value = S.q12b;
+  if(S.q21) setRadio("q21",S.q21); if(S.q22) setRadio("q22",S.q22); if(S.q23) setRadio("q23",S.q23);
+  document.querySelectorAll('input[name="q22j"]').forEach(c => c.checked = S.q22j.includes(c.value));
+  ["p1","p2","p3"].forEach(k => document.getElementById(k).value = S[k]);
+  DOCS.forEach(d => { document.getElementById("m-"+d.id).value = S.msg[d.id]||""; });
+  document.getElementById("q42a").value = S.q42a; document.getElementById("q42b").value = S.q42b;
+  renderAlloc();
+}
+function renderAlloc(){
+  let tot = 0;
+  DOCS.forEach(d => { const v = S.alloc[d.id]||0; tot += v; document.getElementById("a-"+d.id).value = fmt(v); });
+  const el = document.getElementById("allocTotal");
+  el.innerHTML = `<span class="${tot===100000?'ok':'bad'}">${fmt(tot)} / $ 100.000</span>`;
+  document.querySelectorAll("#alloc button").forEach(b => { const d = +b.dataset.d, v = S.alloc[b.dataset.a]||0; b.disabled = !!S.done.r4 || (d>0 ? tot>=100000 : v<=0); });
+}
+
+/* ---------- COLLECT ---------- */
+function collect(){
+  const r = n => (document.querySelector(`input[name="${n}"]:checked`)||{}).value || "";
+  S.team = document.getElementById("teamName").value.trim(); S.members = document.getElementById("teamMembers").value.trim();
+  S.q11 = r("q11"); S.q12a = document.getElementById("q12a").value; S.q12b = document.getElementById("q12b").value;
+  S.q21 = r("q21"); S.q22 = r("q22"); S.q23 = r("q23");
+  S.q22j = [...document.querySelectorAll('input[name="q22j"]:checked')].map(c=>c.value);
+  ["p1","p2","p3"].forEach(k => S[k] = document.getElementById(k).value);
+  DOCS.forEach(d => S.msg[d.id] = document.getElementById("m-"+d.id).value);
+  S.q42a = document.getElementById("q42a").value; S.q42b = document.getElementById("q42b").value;
+  save();
+}
+
+/* ---------- SCORING ---------- */
+function score(){
+  const s = {r1:0,r2:0,r3:0,r4:0,inv:[],venta:0};
+  s.r1 += ({FOLCRES:6,PANADERM:2,TRIDERMAL:1,VALCATIL:1})[S.q11]||0;
+  if(S.q12a==="$ 620.000") s.r1 += 2; if(S.q12b==="60 %") s.r1 += 2;
+  if(S.q21==="3105") s.r2 += 3;
+  if(S.q22==="receta"){ s.r2 += 2; const good = S.q22j.filter(j=>["rx","uni"].includes(j)).length, bad = S.q22j.filter(j=>["stock","finprecio","unimas"].includes(j)).length; if(good>0) s.r2 += bad>0 ? 1 : 2; }
+  if(S.q23==="FINAXIL") s.r2 += 3;
+  const top = [S.p1,S.p2,S.p3];
+  ["ocampo","rios","sosa"].forEach(d => { if(top.includes(d)) s.r3 += 2; });
+  if(S.p1==="ocampo") s.r3 += 2;
+  const key = {ocampo:"A",sosa:"B",rios:"C",vidal:"D",paredes:"D"};
+  DOCS.forEach(d => { if(S.msg[d.id]===key[d.id]) s.r3 += 1; });
+  if(S.q42a==="paredes"){ s.r4 += 1; if(["ocampo","rios","otro"].includes(S.q42b)) s.r4 += 1; } else if(S.q42a==="vidal"){ s.r4 += 1; }
+  // tiers: [per-tramo for first n, n, after]
+  function tiers(id){
+    const inTop = top.includes(id), m = S.msg[id];
+    if(id==="ocampo") return inTop ? (m==="A" ? [340000,4,100000] : [150000,4,80000]) : [100000,99,100000];
+    if(id==="rios") return inTop ? (m==="C" ? [220000,3,100000] : [100000,3,50000]) : [50000,99,50000];
+    if(id==="sosa") return [120000,2,40000];
+    if(id==="vidal") return [80000,99,80000];
+    return [60000,99,60000];
+  }
+  DOCS.forEach(d => { const n = Math.round((S.alloc[d.id]||0)/10000); const [a,k,b] = tiers(d.id); let v = 0; for(let i=1;i<=n;i++) v += i<=k ? a : b; s.inv.push({id:d.id, nm:d.short, tramos:n, venta:v, prep: top.includes(d.id) ? (S.msg[d.id]||"—") : "sin visita"}); s.venta += v; });
+  s.invested = Object.values(S.alloc).reduce((a,b)=>a+b,0); s.pts = s.r1+s.r2+s.r3+s.r4; s.bonus = s.pts*50000; s.total = s.venta - s.invested + s.bonus;
+  return s;
+}
+
+/* ---------- NAV ---------- */
+const ORDER = ["inicio","r1","r2","r3","r4","fin"];
+const LABEL = {inicio:"Inicio",r1:"R1 · Zona por Zona",r2:"R2 · GeoDATA",r3:"R3 · Ficha de Médicos",r4:"R4 · Reporte ROI",fin:"Resultado"};
+function go(step){
+  S.step = step; save();
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-"+step));
+  document.getElementById("steps").innerHTML = ORDER.map(k => `<button type="button" data-go="${k}" class="${k===step?'on':''} ${S.done[k]?'done':''}" ${unlocked(k)?'':'disabled'}>${LABEL[k]}</button>`).join("");
+  document.getElementById("barTeam").textContent = S.team ? "Equipo: " + S.team : "";
+  freezeViews(); renderTimer();
+  window.scrollTo({top:0, behavior:"auto"});
+}
+function freezeViews(){
+  ORDER.forEach(k => {
+    const v = document.getElementById("v-"+k); if(!v) return;
+    const frozen = k==="inicio" ? !!S.startedAt : (k==="fin" ? false : !!S.done[k]);
+    v.querySelectorAll("input,select").forEach(el => el.disabled = frozen);
+    v.querySelectorAll("button[data-next],#startBtn,#finishBtn").forEach(b => b.hidden = frozen);
+    const n = v.querySelector(".frozen"); if(n) n.hidden = !frozen;
+    const nav = v.querySelector(".nav"); const nxt = ORDER[ORDER.indexOf(k)+1];
+    if(nav && nxt){ let r = nav.querySelector(".resume"); if(!r){ r = document.createElement("button"); r.type = "button"; r.className = "btn y resume"; nav.appendChild(r); } r.dataset.go = nxt; r.textContent = "Seguir → " + LABEL[nxt]; r.hidden = !frozen; }
+  });
+  renderAlloc();
+}
+/* ---------- TIMER (45 min) ---------- */
+const LIMIT = 45*60; let tick = null;
+function elapsed(){ if(!S.startedAt) return 0; const end = S.finishedAt || Date.now(); return Math.max(0, Math.floor((end - S.startedAt)/1000)); }
+function fmtT(s){ return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }
+function renderTimer(){
+  const el = document.getElementById("timer"); if(!S.startedAt){ el.hidden = true; return; }
+  el.hidden = false;
+  if(S.finishedAt){ el.textContent = "⏱ " + fmtT(elapsed()); el.className = "clock done"; if(tick){ clearInterval(tick); tick = null; } return; }
+  const rem = LIMIT - elapsed();
+  el.textContent = "⏱ " + fmtT(Math.max(0, rem)); el.className = "clock" + (rem<=300 ? " late" : "");
+  if(rem<=0) timeUp();
+}
+function startTimer(){ if(!S.startedAt){ S.startedAt = Date.now(); S.finishedAt = 0; save(); } if(!tick) tick = setInterval(renderTimer, 1000); renderTimer(); }
+function stopTimer(){ if(S.startedAt && !S.finishedAt){ S.finishedAt = Date.now(); save(); } renderTimer(); }
+function timeUp(){
+  if(S.finishedAt) return; collect(); S.timedOut = true; ["r1","r2","r3","r4","fin"].forEach(k => S.done[k] = true); S.finishedAt = S.startedAt + LIMIT*1000; save(); renderTimer();
+  showResult(); go("fin"); toast("Se terminó el tiempo: el mes cerró con lo que tenían cargado.");
+}
+function unlocked(k){ if(k==="inicio") return true; const i = ORDER.indexOf(k); return ORDER.slice(0,i).every(p => p==="inicio" ? !!S.team : S.done[p]); }
+function warn(id, msg){ document.getElementById(id).textContent = msg; }
+function validate(step){
+  collect();
+  if(step==="r1"){ if(!S.q11||!S.q12a||!S.q12b) return "Falta responder 1.1 o 1.2."; }
+  if(step==="r2"){ if(!S.q21||!S.q22||!S.q23) return "Falta responder 2.1, 2.2 o 2.3."; if(!S.q22j.length) return "Marcá al menos un dato que justifique la 2.2."; }
+  if(step==="r3"){ const t=[S.p1,S.p2,S.p3]; if(t.some(x=>!x)) return "Elegí las tres visitas."; if(new Set(t).size<3) return "No podés repetir un médico en el orden de visita."; if(DOCS.some(d=>!S.msg[d.id])) return "Elegí un mensaje para cada médico."; }
+  if(step==="r4"){ const tot = Object.values(S.alloc).reduce((a,b)=>a+b,0); if(tot!==100000) return "Tenés que asignar exactamente $ 100.000."; if(!S.q42a||!S.q42b) return "Falta responder 4.2."; }
+  return "";
+}
+document.body.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.go){ collect(); if(unlocked(b.dataset.go)) go(b.dataset.go); return; }
+  if(b.dataset.next){ const st = b.dataset.next, m = validate(st); warn("w"+st.slice(1), m); if(m) return; S.done[st]=true; go(ORDER[ORDER.indexOf(st)+1]); return; }
+  if(b.dataset.a){ if(S.done.r4) return; const id = b.dataset.a, d = +b.dataset.d; const tot = Object.values(S.alloc).reduce((a,c)=>a+c,0); const nv = (S.alloc[id]||0) + d*10000; if(nv<0 || (d>0 && tot>=100000)) return; S.alloc[id]=nv; save(); renderAlloc(); return; }
+});
+document.getElementById("startBtn").addEventListener("click", () => { collect(); if(!S.team){ warn("w0","Poné un nombre de equipo para empezar."); return; } warn("w0",""); startTimer(); go("r1"); });
+document.getElementById("finishBtn").addEventListener("click", () => { const m = validate("r4"); warn("w4", m); if(m) return; S.done.r4 = true; S.done.fin = true; stopTimer(); showResult(); go("fin"); });
+function fullReset(){ S = DEF(); lastScore = null; if(tick){ clearInterval(tick); tick = null; } try{ localStorage.removeItem("umcv-state"); }catch(e){} document.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(i=>i.checked=false); document.querySelectorAll('select').forEach(s=>s.value=""); restore(); document.querySelectorAll('.warn').forEach(w=>w.textContent=""); document.getElementById("resetConfirm").hidden = true; document.getElementById("resetTop").hidden = false; go("inicio"); toast("Juego reiniciado"); }
+document.getElementById("resetBtn").addEventListener("click", fullReset);
+document.getElementById("resetTop").addEventListener("click", () => { document.getElementById("resetTop").hidden = true; document.getElementById("resetConfirm").hidden = false; });
+document.getElementById("resetNo").addEventListener("click", () => { document.getElementById("resetConfirm").hidden = true; document.getElementById("resetTop").hidden = false; });
+document.getElementById("resetYes").addEventListener("click", fullReset);
+
+/* ---------- RESULT ---------- */
+let lastScore = null;
+function showResult(){
+  const s = score(); lastScore = s;
+  document.getElementById("finTitle").textContent = "Valorización de " + S.team;
+  document.getElementById("finTotal").textContent = fmt(s.total);
+  document.getElementById("finSub").textContent = `${fmt(s.venta)} de venta recuperada − ${fmt(s.invested)} de inversión + ${fmt(s.bonus)} de preparación (${s.pts} de 35 pts) · tiempo: ${fmtT(elapsed())}${S.timedOut?" (cerrado por tiempo)":""}`;
+  table("t-fin", ["Concepto","Detalle","Importe"], [
+    {c:["Ronda 1 · Zona por Zona", `${s.r1} de 10 pts`, fmt(s.r1*50000)]},
+    {c:["Ronda 2 · GeoDATA", `${s.r2} de 10 pts`, fmt(s.r2*50000)]},
+    {c:["Ronda 3 · Ficha de Médicos", `${s.r3} de 13 pts`, fmt(s.r3*50000)]},
+    {c:["Ronda 4 · Reporte ROI (4.2)", `${s.r4} de 2 pts`, fmt(s.r4*50000)]},
+    {c:["Venta recuperada en 30 días", "según inversión y preparación", fmt(s.venta)]},
+    {c:["Inversión", fmt(s.invested) + " asignados", neg("−" + fmt(s.invested))]},
+    {cls:"tot",c:["Valorización final","",fmt(s.total)]}], {left:[1]});
+  table("t-finHow", ["Paso","Cálculo","Resultado"], [
+    {c:["1 · Puntos de preparación", `R1 ${s.r1} + R2 ${s.r2} + R3 ${s.r3} + R4 ${s.r4} = ${s.pts} pts × $ 50.000`, fmt(s.bonus)]},
+    {c:["2 · Venta recuperada", s.inv.filter(i=>i.tramos).map(i=>`${i.nm}: ${i.tramos} tramo${i.tramos>1?"s":""} → ${fmt(i.venta)}`).join(" · ") || "sin inversión asignada", fmt(s.venta)]},
+    {c:["3 · Inversión", `${s.invested/10000} tramos × $ 10.000`, neg("−" + fmt(s.invested))]},
+    {cls:"tot",c:["Valorización", `${fmt(s.venta)} − ${fmt(s.invested)} + ${fmt(s.bonus)}`, fmt(s.total)]}], {left:[1]});
+  const IDEAL = {ocampo:{inv:50000,venta:1460000,why:"1ª visita, mensaje A. CAT 1, pasó de 11 a 2 recetas de Folcres y se fue a Finaxil: es la receta más grande que se puede recuperar. Los primeros 4 tramos rinden $ 340.000 cada uno."},rios:{inv:30000,venta:660000,why:"2ª visita, mensaje C. Nunca visitado, 10 recetas capilares por mes y cero Folcres: receta nueva que se puede abrir. 3 tramos a $ 220.000."},sosa:{inv:20000,venta:240000,why:"3ª visita, mensaje B. Ya receta 14 Folcres y el 100 % de su mercado capilar: se lo sostiene con 2 tramos, más no mueve la receta."},vidal:{inv:0,venta:0,why:"Clínica médica, deriva lo capilar: bajo potencial para Folcres. Sin inversión este mes."},paredes:{inv:0,venta:0,why:"$ 6 por $ 1 y una receta por mes: se le retira la inversión y se mueve a Ocampo o Ríos."}};
+  table("t-ideal", ["Médico","Inversión ideal","Venta en 30 días","Por qué","Tu inversión","Tu venta"], s.inv.map(i => { const d = IDEAL[i.id]; const same = i.tramos*10000===d.inv; return {cls: same?"hl":"", c:[i.nm, fmt(d.inv), fmt(d.venta), `<span style=\"white-space:normal;display:block;min-width:260px;max-width:420px\">${d.why}</span>`, fmt(i.tramos*10000), fmt(i.venta)]}; }).concat([{cls:"tot",c:["Total",fmt(100000),fmt(2360000),"Visitas en este orden: Ocampo, Ríos, Sosa",fmt(100000),fmt(s.venta)]}]), {left:[3]});
+  const gap = 2360000 - s.venta;
+  document.getElementById("idealGap").innerHTML = gap<=0 ? `<b>Tu reparto alcanzó la venta ideal: ${fmt(s.venta)}.</b> Con los 35 puntos de preparación, la valorización máxima del juego es $ 4.010.000.` : `<b>La inversión ideal recupera ${fmt(2360000)}; tu reparto, ${fmt(s.venta)}.</b> Diferencia: ${fmt(gap)}. Con los 35 puntos de preparación, la valorización máxima del juego es $ 4.010.000.`;
+  table("t-finInv", ["Médico","Inversión","Visita (R3)","Venta recuperada","Por cada $ 1"], s.inv.map(i => ({c:[i.nm, fmt(i.tramos*10000), i.prep==="sin visita"?'<span class="pill bad">sin visita</span>':`<span class="pill ok">mensaje ${i.prep}</span>`, fmt(i.venta), i.tramos? "$ "+Math.round(i.venta/(i.tramos*10000)) : "—"]})), {left:[2]});
+  document.getElementById("sendBtn").hidden = !dbRef;
+  if(dbRef) document.getElementById("sendMsg").textContent = S.sent ? "Resultado enviado al ranking. Podés reenviarlo si cambiaste algo." : "Enviá el resultado para que aparezca en el ranking del facilitador.";
+}
+function toast(m){ const t = document.getElementById("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), 2600); }
+document.getElementById("copyBtn").addEventListener("click", () => {
+  const s = lastScore || score();
+  const txt = `Equipo ${S.team}: valorización ${fmt(s.total)} · tiempo ${fmtT(elapsed())} · ${s.pts}/35 pts · venta recuperada ${fmt(s.venta)} · inversión: ${s.inv.map(i=>i.nm+" "+fmt(i.tramos*10000)).join(", ")} · visitas: ${[S.p1,S.p2,S.p3].join(", ")}`;
+  navigator.clipboard.writeText(txt).then(()=>toast("Resumen copiado")).catch(()=>{ const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); toast("Seleccioná y copiá el texto"); setTimeout(()=>ta.remove(), 8000); });
+});
+
+/* ---------- DB (ranking) ---------- */
+let dbRef = null, userRef = null;
+const slug = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "equipo";
+async function sendResult(){
+  if(!dbRef) return; const s = lastScore || score();
+  const data = {team:S.team, members:S.members, total:s.total, pts:s.pts, venta:s.venta, r1:s.r1, r2:s.r2, r3:s.r3, r4:s.r4,
+    alloc:S.alloc, top:[S.p1,S.p2,S.p3], msg:S.msg, secs:elapsed(), timedOut:!!S.timedOut, manual:false, at:Date.now()};
+  try{ await dbRef.collection("resultados").doc(slug(S.team)).set(data); S.sent = true; save(); toast("Enviado al ranking"); document.getElementById("sendMsg").textContent = "Resultado enviado al ranking."; }
+  catch(e){ toast("No se pudo enviar. Mostrale la pantalla al facilitador."); }
+}
+document.getElementById("sendBtn").addEventListener("click", sendResult);
+
+function renderRank(docs){
+  const list = document.getElementById("rankList"), msg = document.getElementById("rankMsg");
+  if(!docs.length){ list.innerHTML = '<p class="small mute">Todavía no hay resultados. Aparecen acá cuando cada equipo toca "Enviar al ranking", o cuando los agregás a mano.</p>'; msg.textContent = "Esperando resultados…"; return; }
+  docs.sort((a,b)=> (b.total-a.total) || ((a.secs??1e9)-(b.secs??1e9)));
+  msg.textContent = `${docs.length} equipo${docs.length>1?"s":""} · máximo teórico $ 4.010.000`;
+  list.innerHTML = docs.map((d,i) => `<div class="r"><div class="pos">${i+1}</div><div><div><b>${esc(d.team)}</b> ${d.manual?'<span class="pill">a mano</span>':''}</div><div class="d">${d.secs!=null?`⏱ ${fmtT(d.secs)}${d.timedOut?" (por tiempo)":""} · `:''}${d.pts!=null?`${d.pts}/35 pts · `:''}${d.venta!=null?`venta ${fmt(d.venta)} · `:''}${d.top?`visitas: ${d.top.map(x=>(DOCS.find(k=>k.id===x)||{}).short||x).join(", ")} · `:''}${d.alloc?'inversión: '+DOCS.filter(k=>d.alloc[k.id]).map(k=>k.short+" "+fmt(d.alloc[k.id])).join(", "):''}</div></div><div style="text-align:right"><div class="v">${fmt(d.total)}</div>${canAdmin?`<button class="del" data-del="${esc(d._id)}">quitar</button>`:''}</div></div>`).join("");
+}
+let canAdmin = false;
+document.getElementById("rankList").addEventListener("click", async e => { const b = e.target.closest("button[data-del]"); if(!b||!dbRef) return; try{ await dbRef.collection("resultados").doc(b.dataset.del).delete(); toast("Quitado"); }catch(err){ toast("No se pudo quitar"); } });
+document.getElementById("mAdd").addEventListener("click", async () => {
+  const n = document.getElementById("mName").value.trim(), v = parseInt(document.getElementById("mVal").value.replace(/\D/g,""),10), p = parseInt(document.getElementById("mPts").value.replace(/\D/g,""),10);
+  if(!n || isNaN(v)){ warn("wm","Poné equipo y valorización."); return; } warn("wm","");
+  if(!dbRef){ warn("wm","El ranking compartido no está disponible en esta vista."); return; }
+  try{ await dbRef.collection("resultados").doc(slug(n)).set({team:n, total:v, pts:isNaN(p)?null:p, manual:true, at:Date.now()}); document.getElementById("mName").value=""; document.getElementById("mVal").value=""; document.getElementById("mPts").value=""; toast("Agregado"); }catch(e){ warn("wm","No se pudo guardar."); }
+});
+document.getElementById("manualCard").hidden = true;
+
+(async () => {
+  const [db, user] = await Promise.all([window.claude?.use ? claude.use("db") : null, window.claude?.use ? claude.use("user") : null]);
+  dbRef = db; userRef = user;
+  try{ canAdmin = user ? !!(await user.canEdit()) : false; }catch(e){ canAdmin = false; }
+  document.getElementById("manualCard").hidden = !db;
+  if(S.step==="fin" && lastScore) showResult();
+  if(db){ db.collection("resultados").onSnapshot(snap => { const docs = snap.docs.filter(d => d.exists).map(d => Object.assign({_id:d.id}, d.data())); renderRank(docs); }, () => { document.getElementById("rankMsg").textContent = "No se pudo leer el ranking."; }); }
+  else renderRank([]);
+})();
+
+/* ---------- BOOT ---------- */
+function start(data){
+  if(data && data.team!==undefined) S = Object.assign(DEF(), data);
+  restore();
+  if(location.hash === "#ranking"){ go("ranking"); return; }
+  if(S.step==="fin"){ showResult(); }
+  if(S.startedAt && !S.finishedAt){ tick = setInterval(renderTimer, 1000); }
+  go(unlocked(S.step) ? S.step : "inicio");
+}
+window.addEventListener("hashchange", () => { if(location.hash==="#ranking") go("ranking"); });
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? null);
+})();
+</script>
+
+</body></html>
